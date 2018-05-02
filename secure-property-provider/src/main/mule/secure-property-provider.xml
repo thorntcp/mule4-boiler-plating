@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:secure-properties="http://www.mulesoft.org/schema/mule/secure-properties"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/schema/mule/secure-properties/current/mule-secure-properties.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<secure-properties:config name="Secure_Properties_Config" doc:name="Secure Properties Config" doc:id="639d8ddb-bb7f-4647-9d04-2fb6135c7400" file="${mule.env}.properties" key="${vault.secret}" />
+	<flow name="secure-property-providerFlow" doc:id="680ab804-88df-4fbf-ad0b-680ec39e2ad8" >
+		<scheduler doc:name="Scheduler" doc:id="dc2430ea-8a53-4f3f-b90b-c525ddfb1858" >
+			<scheduling-strategy >
+				<fixed-frequency frequency="60" timeUnit="SECONDS"/>
+			</scheduling-strategy>
+		</scheduler>
+		<logger level="INFO" doc:name="Logger" doc:id="746fed42-359f-4cd4-b56d-fb8a30227aa1" message="Job has started..."/>
+		<flow-ref doc:name="accessingInDataWeave2_subFlow" doc:id="9ba37b5b-596b-4366-92fa-29e700521fae" name="accessingInDataWeave2_subFlow"/>
+		<flow-ref doc:name="accessingInVariables_subFlow" doc:id="65a68b5c-44bb-45d9-a788-df1c1cf007aa" name="accessingInVariables_subFlow"/>
+	</flow>
+	<sub-flow name="accessingInDataWeave2_subFlow" doc:id="a395461e-c6ab-4b26-8ee8-a5b3f909f747" >
+		<ee:transform doc:name="Transform Message" doc:id="78fc6515-80b0-4bf5-8ad5-8685b4653276" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	DW2PlainText: p('secure::hello.plaintext'),
+	DW2Decrypted: p('secure::hello.encrypted')
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="80653b0e-fab0-47a1-a5fd-02dff98d4e09" message="#[payload]"/>
+	</sub-flow>
+	<sub-flow name="accessingInVariables_subFlow" doc:id="93c39d4f-5894-4a61-a137-433ef539927c" >
+		<set-variable value="${secure::hello.encrypted}" doc:name="Set Variable - helloEncrypted" doc:id="31d59c76-63e9-4849-b5fe-946b34466b93" variableName="helloEncrypted"/>
+		<set-variable value="${secure::hello.plaintext}" doc:name="Set Variable - helloPlainText" doc:id="06eaac7d-268a-4f36-b3ad-f33c9bc10c2d" variableName="helloPlainText"/>
+		<ee:transform doc:name="Transform Message" doc:id="af4915b4-d5b9-4918-941c-f176a795d382" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	VarsPlainText: vars.helloPlainText,
+	VarsDecrypted: vars.helloEncrypted
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="32a07044-6236-4e0a-b203-e9a3874901a0" message="#[payload]"/>
+	</sub-flow>
+</mule>
